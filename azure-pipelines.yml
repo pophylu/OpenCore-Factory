@@ -25,66 +25,66 @@ steps:
     targetType: 'inline'
     script: |
       #!/bin/bash
-      BD="$(date +"%Y-%m-%d")";
-      echo "##vso[task.setvariable variable=BuildDate]$BD";
-      cd ../b;
-      mkdir "RepoOperation";
-      cd "RepoOperation";
-      repo=$(repo);
-      echo "##vso[task.setvariable variable=BuildCheck]False";
-      git clone "https://github.com/williambj1/$repo.git";
+      BD="$(date +"%Y-%m-%d")"
+      echo "##vso[task.setvariable variable=BuildDate]$BD"
+      cd ../b
+      mkdir "RepoOperation"
+      cd "RepoOperation"
+      repo=$(repo)
+      echo "##vso[task.setvariable variable=BuildCheck]False"
+      git clone "https://github.com/williambj1/$repo.git"
 
-      OCLatest="$(git ls-remote https://github.com/acidanthera/OpenCorePkg.git HEAD | cut -c1-40)";
-      OcSupportLatest="$(git ls-remote https://github.com/acidanthera/OcSupportPkg.git HEAD | cut -c1-40)";
-      EfiLatest="$(git ls-remote https://github.com/acidanthera/EfiPkg.git HEAD | cut -c1-40)";
-      MILatest="$(git ls-remote https://github.com/acidanthera/MacInfoPkg.git HEAD | cut -c1-40)";
+      OCLatest="$(git ls-remote https://github.com/acidanthera/OpenCorePkg.git HEAD | cut -c1-40)"
+      OcSupportLatest="$(git ls-remote https://github.com/acidanthera/OcSupportPkg.git HEAD | cut -c1-40)"
+      EfiLatest="$(git ls-remote https://github.com/acidanthera/EfiPkg.git HEAD | cut -c1-40)"
+      MILatest="$(git ls-remote https://github.com/acidanthera/MacInfoPkg.git HEAD | cut -c1-40)"
 
-      OCPrevious=$(<$repo/Commits/OC.sha1);
-      OcSupportPrevious=$(<$repo/Commits/OcSupport.sha1);
-      EfiPrevious=$(<$repo/Commits/Efi.sha1);
-      MIPrevious=$(<$repo/Commits/MI.sha1);
+      OCPrevious=$(<$repo/Commits/OC.sha1)
+      OcSupportPrevious=$(<$repo/Commits/OcSupport.sha1)
+      EfiPrevious=$(<$repo/Commits/Efi.sha1)
+      MIPrevious=$(<$repo/Commits/MI.sha1)
 
       if [ $(basename $repo/Commits/20*) != $BD ]; then
-        rm -rf $repo/Commits/20*;
-        mkdir $repo/Commits/$BD;
-        cp $repo/Commits/*.sha1 $repo/Commits/$BD;
+        rm -rf $repo/Commits/20*
+        mkdir $repo/Commits/$BD
+        cp $repo/Commits/*.sha1 $repo/Commits/$BD
       fi
 
-      OCTdy=$(<$repo/Commits/$BD/OC.sha1);
-      OcSupportTdy=$(<$repo/Commits/$BD/OcSupport.sha1);
-      EfiTdy=$(<$repo/Commits/$BD/Efi.sha1);
-      MITdy=$(<$repo/Commits/$BD/MI.sha1);
+      OCTdy=$(<$repo/Commits/$BD/OC.sha1)
+      OcSupportTdy=$(<$repo/Commits/$BD/OcSupport.sha1)
+      EfiTdy=$(<$repo/Commits/$BD/Efi.sha1)
+      MITdy=$(<$repo/Commits/$BD/MI.sha1)
 
-      echo "##vso[task.setvariable variable=OCcmt]$OCTdy";
-      echo "##vso[task.setvariable variable=OcSupportcmt]$OcSupportTdy";
-      echo "##vso[task.setvariable variable=Eficmt]$EfiTdy";
-      echo "##vso[task.setvariable variable=MIcmt]$MITdy";
+      echo "##vso[task.setvariable variable=OCcmt]$OCTdy"
+      echo "##vso[task.setvariable variable=OcSupportcmt]$OcSupportTdy"
+      echo "##vso[task.setvariable variable=Eficmt]$EfiTdy"
+      echo "##vso[task.setvariable variable=MIcmt]$MITdy"
 
       if [ $OCPrevious != $OCLatest ]; then
-          rm -rf $repo/Commits/OC.sha1;
-          echo "Changes found in OpenCorePkg";
-          echo $OCLatest >> $repo/Commits/OC.sha1;
-          echo "##vso[task.setvariable variable=BuildCheck]True";
+          rm -rf $repo/Commits/OC.sha1
+          echo "Changes found in OpenCorePkg"
+          echo $OCLatest >> $repo/Commits/OC.sha1
+          echo "##vso[task.setvariable variable=BuildCheck]True"
       fi
 
       if [ $OcSupportPrevious != $OcSupportLatest ]; then
-          rm -rf $repo/Commits/OcSupport.sha1;
-          echo "Changes found in OcSupportPkg";
-          echo $OcSupportLatest >> $repo/Commits/OcSupport.sha1;
-          echo "##vso[task.setvariable variable=BuildCheck]True";
+          rm -rf $repo/Commits/OcSupport.sha1
+          echo "Changes found in OcSupportPkg"
+          echo $OcSupportLatest >> $repo/Commits/OcSupport.sha1
+          echo "##vso[task.setvariable variable=BuildCheck]True"
       fi
 
       if [ $EfiPrevious != $EfiLatest ]; then
-          rm -rf $repo/Commits/Efi.sha1;
-          echo "Changes found in EfiPkg";
-          echo $EfiLatest >> $repo/Commits/Efi.sha1;
-          echo "##vso[task.setvariable variable=BuildCheck]True";
+          rm -rf $repo/Commits/Efi.sha1
+          echo "Changes found in EfiPkg"
+          echo $EfiLatest >> $repo/Commits/Efi.sha1
+          echo "##vso[task.setvariable variable=BuildCheck]True"
       fi
 
       if [ $MIPrevious != $MILatest ]; then
-          rm -rf $repo/Commits/MI.sha1;
+          rm -rf $repo/Commits/MI.sha1
           echo "Changes found in MacInfoPkg"
-          echo $MILatest >> $repo/Commits/MI.sha1;
+          echo $MILatest >> $repo/Commits/MI.sha1
           echo "##vso[task.setvariable variable=BuildCheck]True"
       fi
 
@@ -95,9 +95,9 @@ steps:
     targetType: 'inline'
     script: |
       #!/bin/bash
-      cd ../b;
-      git clone https://github.com/acidanthera/OpenCorePkg.git;
-      cd OpenCorePkg;
+      cd ../b
+      git clone https://github.com/acidanthera/OpenCorePkg.git
+      cd OpenCorePkg
       sed -i -e 's/--depth=1 //' macbuild.tool
       sed -i -e 's/.dsc/.dsc \| xcpretty/g' macbuild.tool
       sed -i -e 's/updaterepo "https\:\/\/github.com\/acidanthera\/audk" UDK master || exit 1/git clone https\:\/\/github.com\/acidanthera\/audk --depth=1 UDK || exit 1/' macbuild.tool
@@ -108,12 +108,12 @@ steps:
   displayName: Move Binaries
   inputs:
     script: |
-      cd ../b/OpenCorePkg;
-      mkdir ../../a/OC;
-      cp UDK/Build/OpenCorePkg/DEBUG*/X64/OpenCore*.zip ../../a/OC;
-      cp UDK/Build/OpenCorePkg/RELEASE*/X64/OpenCore*.zip ../../a/OC;
-      cd UDK/Build/OpenCorePkg/NOOPT*/X64;
-      zip -r OpenCore-NOOPT.zip *.efi;
+      cd ../b/OpenCorePkg
+      mkdir ../../a/OC
+      cp UDK/Build/OpenCorePkg/DEBUG*/X64/OpenCore*.zip ../../a/OC
+      cp UDK/Build/OpenCorePkg/RELEASE*/X64/OpenCore*.zip ../../a/OC
+      cd UDK/Build/OpenCorePkg/NOOPT*/X64
+      zip -r OpenCore-NOOPT.zip *.efi
       cp OpenCore-NOOPT.zip ../../../../../../../a/OC
 
 - task: Bash@3
@@ -123,41 +123,41 @@ steps:
     targetType: 'inline'
     script: |
       #!/bin/bash
-      ToA="../../../../a";
-      cd ../b/OpenCorePkg/UDK/OpenCorePkg;
-      echo "## Changes" >> ../../a/ReleaseNotes.md;
-      OCcount="$(git rev-list --count $(OCcmt)..HEAD)";
+      ToA="../../../../a"
+      cd ../b/OpenCorePkg/UDK/OpenCorePkg
+      echo "## Changes" >> ../../a/ReleaseNotes.md
+      OCcount="$(git rev-list --count $(OCcmt)..HEAD)"
       if [ $OCcount != 0 ]; then
         OCNote=$(git log -$OCcount --format=" - %s %n")
-        echo "Got Notes from OpenCorePkg";
-        echo "### OpenCorePkg" >> ../../a/ReleaseNotes.md;
-        echo $OCNote >> ../../a/ReleaseNotes.md;
+        echo "Got Notes from OpenCorePkg"
+        echo "### OpenCorePkg" >> ../../a/ReleaseNotes.md
+        echo $OCNote >> ../../a/ReleaseNotes.md
       fi
 
-      cd ../OcSupportPkg;
-      OcSupportcount="$(git rev-list --count $(OcSupportcmt)..HEAD)";
+      cd ../OcSupportPkg
+      OcSupportcount="$(git rev-list --count $(OcSupportcmt)..HEAD)"
       if [ $OcSupportcount != 0 ]; then
-        OcSupportNote=$(git log -$OcSupportcount --format=" - %s %n");
-        echo "Got Notes from OcSupportPkg";
-        echo "### OcSupportPkg" >> $ToA/ReleaseNotes.md;
-        echo $OcSupportNote >> $ToA/ReleaseNotes.md;
+        OcSupportNote=$(git log -$OcSupportcount --format=" - %s %n")
+        echo "Got Notes from OcSupportPkg"
+        echo "### OcSupportPkg" >> $ToA/ReleaseNotes.md
+        echo $OcSupportNote >> $ToA/ReleaseNotes.md
       fi
 
-      cd ../EfiPkg;
-      Eficount="$(git rev-list --count $(Eficmt)..HEAD)";
+      cd ../EfiPkg
+      Eficount="$(git rev-list --count $(Eficmt)..HEAD)"
       if [ $Eficount != 0 ]; then
-        EfiNote=$(git log -$Eficount --format=" - %s %n");
-        echo "Got Notes from EfiPkg";
-        echo "### EfiPkg" >> $ToA/ReleaseNotes.md;
-        echo $EfiNote >> $ToA/ReleaseNotes.md;
+        EfiNote=$(git log -$Eficount --format=" - %s %n")
+        echo "Got Notes from EfiPkg"
+        echo "### EfiPkg" >> $ToA/ReleaseNotes.md
+        echo $EfiNote >> $ToA/ReleaseNotes.md
       fi
 
-      cd ../MacInfoPkg;
-      MIcount="$(git rev-list --count $(MIcmt)..HEAD)";
+      cd ../MacInfoPkg
+      MIcount="$(git rev-list --count $(MIcmt)..HEAD)"
       if [ $MIcount != 0 ]; then
-        MINote=$(git log -$MIcount --format=" - %s %n");
-        echo "Got Notes from MacInfoPkg";
-        echo "### MacInfoPkg" >> $ToA/ReleaseNotes.md;
+        MINote=$(git log -$MIcount --format=" - %s %n")
+        echo "Got Notes from MacInfoPkg"
+        echo "### MacInfoPkg" >> $ToA/ReleaseNotes.md
         echo $MINote >> $ToA/ReleaseNotes.md
       fi
       cd $ToA
@@ -174,9 +174,30 @@ steps:
       echo https://$(PAT):x-oauth-basic@github.com >> ~/.git-credentials
       git config --global user.email $(Email)
       git config --global user.name $(User)
-      cd ../b/RepoOperation/$(repo);
-      git add .;
-      git commit -m "Refresh Commits to $(BuildDate)";
+      cd ../b/RepoOperation/$(repo)
+      git add .
+      git commit -m "Refresh Commits to $(BuildDate)"
+      git push origin master
+
+- task: CmdLine@2
+  condition: eq(variables['BuildCheck'], 'True')
+  displayName: Publish Gitee Mirror
+  inputs:
+    script: |
+      rm -rf ~/.gitconfig
+      rm -rf ~/.git-credentials
+      git config --global credential.helper store
+      git config --global user.email $(Email)
+      git config --global user.name $(User)
+      cd ../b
+      git clone https://williambj1:$(GiteePAT)@gitee.com/williambj1/$(repo).git
+      cd $(repo)
+      rm -rf OpenCore-Build/*
+      cp -R $(Build.ArtifactStagingDirectory)/OC/OpenCore*.zip OpenCore-Build
+      cp -R $(Build.ArtifactStagingDirectory)/ReleaseNotes.md OpenCore-Build
+      mv OpenCore-Build/ReleaseNotes.md OpenCore-Build/README.md
+      git add .
+      git commit -m "OpenCore-Build-$(BuildDate)"
       git push origin master
 
 - task: GitHubRelease@0
