@@ -179,26 +179,26 @@ steps:
       git commit -m "Refresh Commits to $(BuildDate)"
       git push origin master
 
-- task: CmdLine@2
-  condition: eq(variables['BuildCheck'], 'True')
-  displayName: Publish Gitee Mirror
-  inputs:
-    script: |
-      rm -rf ~/.gitconfig
-      rm -rf ~/.git-credentials
-      git config --global credential.helper store
-      git config --global user.email $(Email)
-      git config --global user.name $(User)
-      cd ../b
-      git clone https://williambj1:$(GiteePAT)@gitee.com/williambj1/$(repo).git
-      cd $(repo)
-      rm -rf OpenCore-Build/*
-      cp -R $(Build.ArtifactStagingDirectory)/OC/OpenCore*.zip OpenCore-Build
-      cp -R $(Build.ArtifactStagingDirectory)/ReleaseNotes.md OpenCore-Build
-      mv OpenCore-Build/ReleaseNotes.md OpenCore-Build/README.md
-      git add .
-      git commit -m "OpenCore-Build-$(BuildDate)"
-      git push origin master
+#- task: CmdLine@2
+#  condition: eq(variables['BuildCheck'], 'True')
+#  displayName: Publish Gitee Mirror
+#  inputs:
+#    script: |
+#      rm -rf ~/.gitconfig
+#      rm -rf ~/.git-credentials
+#      git config --global credential.helper store
+#      git config --global user.email $(Email)
+#      git config --global user.name $(User)
+#      cd ../b
+#      git clone https://williambj1:$(GiteePAT)@gitee.com/williambj1/$(repo).git
+#      cd $(repo)
+#      rm -rf OpenCore-Build/*
+#      cp -R $(Build.ArtifactStagingDirectory)/OC/OpenCore*.zip OpenCore-Build
+#      cp -R $(Build.ArtifactStagingDirectory)/ReleaseNotes.md OpenCore-Build
+#      mv OpenCore-Build/ReleaseNotes.md OpenCore-Build/README.md
+#      git add .
+#      git commit -m "OpenCore-Build-$(BuildDate)"
+#      git push origin master
 
 - task: GitHubRelease@0
   condition: eq(variables['BuildCheck'], 'True')
