@@ -13,11 +13,21 @@ schedules:
 variables:
   repo: 'OpenCore-Factory'
   FORCE_INSTALL: 1
+  DEBUG: 0
 
 pool:
   vmImage: 'macOS-10.14'
 
 steps:
+
+- task: Bash@3
+  condition: ne(variables['Build.SourceBranch'], 'refs/heads/master')
+  displayName: Set Debug Variables
+  inputs:
+    targetType: 'inline'
+    script: |
+      #!/bin/bash
+      echo "##vso[task.setvariable variable=DEBUG]1"
 
 - task: Bash@3
   displayName: Check Changes
@@ -27,69 +37,68 @@ steps:
       #!/bin/bash
       BD="$(date +"%Y-%m-%d")"
       echo "##vso[task.setvariable variable=BuildDate]$BD"
-      cd ../b
+      cd ../b || exit 1
       mkdir "RepoOperation"
-      cd "RepoOperation"
+      cd "RepoOperation" || exit 1
       repo=$(repo)
       echo "##vso[task.setvariable variable=BuildCheck]False"
       git clone "https://github.com/williambj1/$repo.git"
-
-      OCLatest="$(git ls-remote https://github.com/acidanthera/OpenCorePkg.git HEAD | cut -c1-40)"
-      OcSupportLatest="$(git ls-remote https://github.com/acidanthera/OcSupportPkg.git HEAD | cut -c1-40)"
-      EfiLatest="$(git ls-remote https://github.com/acidanthera/EfiPkg.git HEAD | cut -c1-40)"
-      MILatest="$(git ls-remote https://github.com/acidanthera/MacInfoPkg.git HEAD | cut -c1-40)"
-
-      OCPrevious=$(<$repo/Commits/OC.sha1)
-      OcSupportPrevious=$(<$repo/Commits/OcSupport.sha1)
-      EfiPrevious=$(<$repo/Commits/Efi.sha1)
-      MIPrevious=$(<$repo/Commits/MI.sha1)
-
-      if [ $(basename $repo/Commits/20*) != $BD ]; then
-        rm -rf $repo/Commits/20*
-        mkdir $repo/Commits/$BD
-        cp $repo/Commits/*.sha1 $repo/Commits/$BD
+      if [ $DEBUG == 1 ]; then
+        cd $repo || exit 1
+        git checkout $(Build.SourceBranchName)
+        cd ../
       fi
 
-      OCTdy=$(<$repo/Commits/$BD/OC.sha1)
-      OcSupportTdy=$(<$repo/Commits/$BD/OcSupport.sha1)
-      EfiTdy=$(<$repo/Commits/$BD/Efi.sha1)
-      MITdy=$(<$repo/Commits/$BD/MI.sha1)
-
-      echo "##vso[task.setvariable variable=OCcmt]$OCTdy"
-      echo "##vso[task.setvariable variable=OcSupportcmt]$OcSupportTdy"
-      echo "##vso[task.setvariable variable=Eficmt]$EfiTdy"
-      echo "##vso[task.setvariable variable=MIcmt]$MITdy"
-
-      if [ $OCPrevious != $OCLatest ]; then
-          rm -rf $repo/Commits/OC.sha1
-          echo "Changes found in OpenCorePkg"
-          echo $OCLatest >> $repo/Commits/OC.sha1
-          echo "##vso[task.setvariable variable=BuildCheck]True"
+      # Clean SHA History Folder
+      if [ "$(basename "$repo"/Commits/20*)" != "$BD" ]; then
+        rm -rf "$repo"/Commits/20*
+        mkdir "$repo"/Commits/"$BD"
+        cp "$repo"/Commits/*.sha1 "$repo"/Commits/"$BD"
       fi
 
-      if [ $OcSupportPrevious != $OcSupportLatest ]; then
-          rm -rf $repo/Commits/OcSupport.sha1
-          echo "Changes found in OcSupportPkg"
-          echo $OcSupportLatest >> $repo/Commits/OcSupport.sha1
-          echo "##vso[task.setvariable variable=BuildCheck]True"
-      fi
+      # Check and Update commit SHA
+      function CPSHA() {
 
-      if [ $EfiPrevious != $EfiLatest ]; then
-          rm -rf $repo/Commits/Efi.sha1
-          echo "Changes found in EfiPkg"
-          echo $EfiLatest >> $repo/Commits/Efi.sha1
-          echo "##vso[task.setvariable variable=BuildCheck]True"
-      fi
+        declare "${1}"Latest="$(git ls-remote https://github.com/acidanthera/"${2}"Pkg.git HEAD | cut -c1-40)"
+        declare "${1}"Previous="$(<"$repo"/Commits/"${1}".sha1)"
+        declare "${1}"Tdy="$(<"$repo"/Commits/"$BD"/"${1}".sha1)"
 
-      if [ $MIPrevious != $MILatest ]; then
-          rm -rf $repo/Commits/MI.sha1
-          echo "Changes found in MacInfoPkg"
-          echo $MILatest >> $repo/Commits/MI.sha1
-          echo "##vso[task.setvariable variable=BuildCheck]True"
-      fi
+        local Latest
+        Latest="$(eval echo \$"${1}"Latest)"
+        local Previous
+        Previous="$(eval echo \$"${1}"Previous)"
+        local Tdy
+        Tdy="$(eval echo \$"${1}"Tdy)"
+        printf "${1}Tdy:$Tdy \n${1}Latest:$Latest \n${1}Previous:$Previous\n"
+
+        ## Azure's cross task variables can't be stored by variables
+        if [ "${1}" == "OC" ]; then
+          echo "##vso[task.setvariable variable=OCcmt]$Tdy"
+        elif [ "${1}" == "OcSupport" ]; then
+          echo "##vso[task.setvariable variable=OcSupportcmt]$Tdy"
+        elif [ "${1}" == "Efi" ]; then
+          echo "##vso[task.setvariable variable=Eficmt]$Tdy"
+        elif [ "${1}" == "MI" ]; then
+          echo "##vso[task.setvariable variable=MIcmt]$Tdy"
+        fi
+
+        if [ "$Previous" != "$Latest" ]; then
+            rm -rf "$repo"/Commits/"${1}".sha1
+            echo "Changes found in ${1}"
+            echo "$Latest" >> "${repo}/Commits/"${1}".sha1"
+            echo "##vso[task.setvariable variable=BuildCheck]True"
+        fi
+
+        printf "\n"
+      }
+      
+      CPSHA OC OpenCore
+      CPSHA OcSupport OcSupport
+      CPSHA Efi Efi
+      CPSHA MI MacInfo
 
 - task: Bash@3
-  condition: eq(variables['BuildCheck'], 'True')
+  condition: or(eq(variables['BuildCheck'], 'True'), ne(variables['Build.SourceBranch'], 'refs/heads/master'))
   displayName: Build OC
   inputs:
     targetType: 'inline'
@@ -98,13 +107,20 @@ steps:
       cd ../b
       git clone https://github.com/acidanthera/OpenCorePkg.git
       cd OpenCorePkg
+
+      # Patch Build Tool
       sed -i -e 's/--depth=1 //' macbuild.tool
       sed -i -e 's/.dsc/.dsc \| xcpretty/g' macbuild.tool
       sed -i -e 's/updaterepo "https\:\/\/github.com\/acidanthera\/audk" UDK master || exit 1/git clone https\:\/\/github.com\/acidanthera\/audk --depth=1 UDK || exit 1/' macbuild.tool
-      ./macbuild.tool
+      if [ $DEBUG == 1 ]; then
+        ./macbuild.tool --skip-build --skip-package --skip-tests
+      else
+        ./macbuild.tool
+      fi
+      
 
 - task: CmdLine@2
-  condition: eq(variables['BuildCheck'], 'True')
+  condition: and(succeeded(), eq(variables['BuildCheck'], 'True'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
   displayName: Move Binaries
   inputs:
     script: |
@@ -112,61 +128,64 @@ steps:
       mkdir ../../a/OC
       cp UDK/Build/OpenCorePkg/DEBUG*/X64/OpenCore*.zip ../../a/OC
       cp UDK/Build/OpenCorePkg/RELEASE*/X64/OpenCore*.zip ../../a/OC
-      cd UDK/Build/OpenCorePkg/NOOPT*/X64
-      zip -r OpenCore-NOOPT.zip *.efi
-      cp OpenCore-NOOPT.zip ../../../../../../../a/OC
 
 - task: Bash@3
-  condition: eq(variables['BuildCheck'], 'True')
+  condition: and(succeeded(), or(eq(variables['BuildCheck'], 'True'), ne(variables['Build.SourceBranch'], 'refs/heads/master')))
   displayName: Get Commit Notes
   inputs:
     targetType: 'inline'
     script: |
       #!/bin/bash
-      ToA="../../../../a"
-      cd ../b/OpenCorePkg/UDK/OpenCorePkg
-      echo "## Changes" >> ../../a/ReleaseNotes.md
-      OCcount="$(git rev-list --count $(OCcmt)..HEAD)"
-      if [ $OCcount != 0 ]; then
-        OCNote=$(git log -$OCcount --format=" - %s %n")
-        echo "Got Notes from OpenCorePkg"
-        echo "### OpenCorePkg" >> ../../a/ReleaseNotes.md
-        echo $OCNote >> ../../a/ReleaseNotes.md
-      fi
+      ToMD="$(pwd)/../a/ReleaseNotes.md"
 
-      cd ../OcSupportPkg
-      OcSupportcount="$(git rev-list --count $(OcSupportcmt)..HEAD)"
-      if [ $OcSupportcount != 0 ]; then
-        OcSupportNote=$(git log -$OcSupportcount --format=" - %s %n")
-        echo "Got Notes from OcSupportPkg"
-        echo "### OcSupportPkg" >> $ToA/ReleaseNotes.md
-        echo $OcSupportNote >> $ToA/ReleaseNotes.md
-      fi
+      echo "## Changes" >> $ToMD
 
-      cd ../EfiPkg
-      Eficount="$(git rev-list --count $(Eficmt)..HEAD)"
-      if [ $Eficount != 0 ]; then
-        EfiNote=$(git log -$Eficount --format=" - %s %n")
-        echo "Got Notes from EfiPkg"
-        echo "### EfiPkg" >> $ToA/ReleaseNotes.md
-        echo $EfiNote >> $ToA/ReleaseNotes.md
-      fi
+      cd ../b/OpenCorePkg/UDK || exit 1
 
-      cd ../MacInfoPkg
-      MIcount="$(git rev-list --count $(MIcmt)..HEAD)"
-      if [ $MIcount != 0 ]; then
-        MINote=$(git log -$MIcount --format=" - %s %n")
-        echo "Got Notes from MacInfoPkg"
-        echo "### MacInfoPkg" >> $ToA/ReleaseNotes.md
-        echo $MINote >> $ToA/ReleaseNotes.md
-      fi
-      cd $ToA
-      sed -i -e $'s/http.*//g' ReleaseNotes.md
-      # An extremely dirty solution to solve Azure's buggy bash line wrap
-      sed -i -e $'s/ -/\\\n-/g' ReleaseNotes.md
+      # Get Commit Notes as Release Notes
+      function GNotes() {
+
+        cd "${2}"Pkg || exit 1
+
+        ## Azure's cross task variables can't be called by variables
+        if [ "${1}" == "OC" ]; then
+          TMPcmt=$(OCcmt)
+        elif [ "${1}" == "OcSupport" ]; then
+          TMPcmt=$(OcSupportcmt)
+        elif [ "${1}" == "Efi" ]; then
+          TMPcmt=$(Eficmt)
+        elif [ "${1}" == "MI" ]; then
+          TMPcmt=$(MIcmt)
+        fi
+
+        declare "${1}"count="$(git rev-list --count $TMPcmt..HEAD)"
+        local Count
+        Count=$(eval echo \$"${1}"count)
+
+        if [ "$Count" != 0 ]; then
+          declare "${1}"note="$(git log -"$Count" --format=" - %s %n")"
+          local Note
+          Note=$(eval echo \$"${1}"note)
+          echo "Got $Count Notes from ${2}Pkg"
+          echo "### ${2}Pkg" >> $ToMD || exit 1
+          echo "$Note" >> $ToMD || exit 1
+        fi
+        cd ../
+      }
+
+      GNotes OC OpenCore
+      GNotes OcSupport OcSupport
+      GNotes Efi Efi
+      GNotes MI MacInfo
+
+      # Reformat Release Notes
+      sed -i -e $'s/http.*//g' $ToMD
+      ## An extremely dirty solution to solve Azure's buggy bash line wrap
+      sed -i -e $'s/ -/\\\n-/g' $ToMD
+      cat $ToMD
 
 - task: CmdLine@2
-  condition: eq(variables['BuildCheck'], 'True')
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'), eq(variables['BuildCheck'], 'True'))
   displayName: Refresh Commits
   inputs:
     script: |
@@ -201,7 +220,7 @@ steps:
 #      git push origin master
 
 - task: GitHubRelease@0
-  condition: eq(variables['BuildCheck'], 'True')
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'), eq(variables['BuildCheck'], 'True'))
   displayName: 'Publish GitHub Release'
   inputs:
     gitHubConnection: release
