@@ -179,9 +179,10 @@ steps:
       GNotes MI MacInfo
 
       # Reformat Release Notes
-      sed -i -e $'s/http.*//g' $ToMD
       ## An extremely dirty solution to solve Azure's buggy bash line wrap
       sed -i -e $'s/ -/\\\n-/g' $ToMD
+      ## Exclude unnecessary links
+      sed -i -e $'s/http.*//g' $ToMD
       cat $ToMD
 
 - task: CmdLine@2
