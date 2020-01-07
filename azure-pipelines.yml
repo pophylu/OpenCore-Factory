@@ -109,6 +109,11 @@ steps:
       cd OpenCorePkg
 
       # Patch Build Tool
+      
+      #FIXME (temp workaround, use official tool in the future)
+      rm -rf macbuild.tool
+      curl -# -L -O "https://raw.githubusercontent.com/acidanthera/OpenCorePkg/2108de1e982d4a857fa236cdb9261d827902a775/macbuild.tool"
+      
       sed -i -e 's/--depth=1 //' macbuild.tool
       sed -i -e 's/.dsc/.dsc \| xcpretty/g' macbuild.tool
       sed -i -e 's/updaterepo "https\:\/\/github.com\/acidanthera\/audk" UDK master || exit 1/git clone https\:\/\/github.com\/acidanthera\/audk --depth=1 UDK || exit 1/' macbuild.tool
