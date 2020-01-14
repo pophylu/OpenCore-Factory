@@ -114,7 +114,7 @@ steps:
       chmod +x efibuild.sh
       
       sed -i -e 's/--depth=1/--depth=30/g' efibuild.sh
-      sed -i -e 's/.dsc/.dsc \| xcpretty/g' efibuild.sh
+      sed -i -e 's/.dsc"/.dsc" \| xcpretty/g' efibuild.sh
       sed -i -e 's/updaterepo "https\:\/\/github.com\/acidanthera\/audk" UDK master || exit 1/git clone https\:\/\/github.com\/acidanthera\/audk --depth=1 UDK || exit 1/' efibuild.sh
       sed -i -e 's/src=.*/src=\$\(cat efibuild.sh\) \&\& eval \"\$src\" \|\| exit 1/g' macbuild.tool
 
