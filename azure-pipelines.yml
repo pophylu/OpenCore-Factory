@@ -14,6 +14,7 @@ variables:
   repo: 'OpenCore-Factory'
   BuildCheck: 'False'
   FORCE_INSTALL: 1
+  BUILD_UTILITIES: 1
   DEBUG: 0
 
 pool:
@@ -74,8 +75,6 @@ steps:
         ## Azure's cross task variables can't be stored by variables
         if [ "${1}" == "OC" ]; then
           echo "##vso[task.setvariable variable=OCcmt]$Tdy"
-        elif [ "${1}" == "OcSupport" ]; then
-          echo "##vso[task.setvariable variable=OcSupportcmt]$Tdy"
         elif [ "${1}" == "Efi" ]; then
           echo "##vso[task.setvariable variable=Eficmt]$Tdy"
         elif [ "${1}" == "MI" ]; then
@@ -93,7 +92,6 @@ steps:
       }
       
       CPSHA OC OpenCore
-      CPSHA OcSupport OcSupport
       CPSHA Efi Efi
       CPSHA MI MacInfo
 
@@ -118,11 +116,7 @@ steps:
       sed -i -e 's/updaterepo "https\:\/\/github.com\/acidanthera\/audk" UDK master || exit 1/git clone https\:\/\/github.com\/acidanthera\/audk --depth=1 UDK || exit 1/' efibuild.sh
       sed -i -e 's/src=.*/src=\$\(cat efibuild.sh\) \&\& eval \"\$src\" \|\| exit 1/g' macbuild.tool
 
-      if [ $DEBUG == 1 ]; then
-        ./macbuild.tool --skip-build --skip-package --skip-tests
-      else
-        ./macbuild.tool
-      fi
+      ./macbuild.tool
       
 
 - task: CmdLine@2
@@ -156,8 +150,6 @@ steps:
         ## Azure's cross task variables can't be called by variables
         if [ "${1}" == "OC" ]; then
           TMPcmt=$(OCcmt)
-        elif [ "${1}" == "OcSupport" ]; then
-          TMPcmt=$(OcSupportcmt)
         elif [ "${1}" == "Efi" ]; then
           TMPcmt=$(Eficmt)
         elif [ "${1}" == "MI" ]; then
@@ -180,7 +172,6 @@ steps:
       }
 
       GNotes OC OpenCore
-      GNotes OcSupport OcSupport
       GNotes Efi Efi
       GNotes MI MacInfo
 
