@@ -25,7 +25,6 @@
 Contains latest changes from:
 
 - [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg)
-- [OcSupportPkg](https://github.com/acidanthera/OcSupportPkg)
 - [MacInfoPkg](https://github.com/acidanthera/MacInfoPkg)
 - [EfiPkg](https://github.com/acidanthera/EfiPkg)
 
@@ -41,7 +40,6 @@ Contains latest changes from:
 
 - Acidanthera
   - OpenCorePkg
-  - OCSupportPkg
   - MacInfoPkg
   - EfiPkg
 
