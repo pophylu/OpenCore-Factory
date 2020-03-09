@@ -11,7 +11,6 @@ schedules:
   always: true
 
 variables:
-  repo: 'OpenCore-Factory'
   BuildCheck: 'False'
   FORCE_INSTALL: 1
   BUILD_UTILITIES: 1
@@ -24,11 +23,14 @@ steps:
 
 - task: Bash@3
   condition: ne(variables['Build.SourceBranch'], 'refs/heads/master')
-  displayName: Set Debug Variables
+  displayName: Prepare Pipelines
   inputs:
     targetType: 'inline'
     script: |
       #!/bin/bash
+      UserPlusRepo=$(Build.Repository.Name)
+      Repo=${UserPlusRepo#*/}
+      echo "##vso[task.setvariable variable=REPO]$Repo"
       echo "##vso[task.setvariable variable=DEBUG]1"
 
 - task: Bash@3
@@ -37,56 +39,47 @@ steps:
     targetType: 'inline'
     script: |
       #!/bin/bash
-      BD="$(date +"%Y-%m-%d")"
+      BD="$(date +"%Y-%m-%d")" # Build Date
       echo "##vso[task.setvariable variable=BuildDate]$BD"
       cd ../b || exit 1
       mkdir "RepoOperation"
       cd "RepoOperation" || exit 1
-      repo=$(repo)
-      git clone "https://github.com/williambj1/$repo.git"
-      if [ $DEBUG == 1 ]; then
-        cd $repo || exit 1
+      git clone "$(Build.Repository.Uri).git"
+      if [[ $DEBUG == 1 ]]; then
+        cd $(REPO) || exit 1
         git checkout $(Build.SourceBranchName)
         cd ../
       fi
 
       # Clean SHA History Folder
-      if [ "$(basename "$repo"/Commits/20*)" != "$BD" ]; then
-        rm -rf "$repo"/Commits/20*
-        mkdir "$repo"/Commits/"$BD"
-        cp "$repo"/Commits/*.sha1 "$repo"/Commits/"$BD"
+      if [[ "$(basename "$(REPO)"/Commits/20*)" != "$BD" ]]; then
+        rm -rf "$(REPO)"/Commits/20*
+        mkdir "$(REPO)"/Commits/"$BD"
+        cp "$(REPO)"/Commits/*.sha1 "$(REPO)"/Commits/"$BD"
       fi
 
       # Check and Update commit SHA
       function CPSHA() {
 
-        declare "${1}"Latest="$(git ls-remote https://github.com/acidanthera/"${2}"Pkg.git HEAD | cut -c1-40)"
-        declare "${1}"Previous="$(<"$repo"/Commits/"${1}".sha1)"
-        declare "${1}"Tdy="$(<"$repo"/Commits/"$BD"/"${1}".sha1)"
+        local Latest="$(git ls-remote https://github.com/acidanthera/"${2}"Pkg.git HEAD | cut -c1-40)"
+        local Previous="$(<"$(REPO)"/Commits/"${1}".sha1)"
+        local Tdy="$(<"$(REPO)"/Commits/"$BD"/"${1}".sha1)"
 
-        local Latest
-        Latest="$(eval echo \$"${1}"Latest)"
-        local Previous
-        Previous="$(eval echo \$"${1}"Previous)"
-        local Tdy
-        Tdy="$(eval echo \$"${1}"Tdy)"
-        printf "${1}Tdy:$Tdy \n${1}Latest:$Latest \n${1}Previous:$Previous\n"
+        # Store todays commits for later usage. Dir parallel with RepoOperation, under ./b
+        echo "${1}cmt=$Tdy" >> ../TdyCommit
 
-        ## Azure's cross task variables can't be stored by variables
-        if [ "${1}" == "OC" ]; then
-          echo "##vso[task.setvariable variable=OCcmt]$Tdy"
-        elif [ "${1}" == "Efi" ]; then
-          echo "##vso[task.setvariable variable=Eficmt]$Tdy"
-        elif [ "${1}" == "MI" ]; then
-          echo "##vso[task.setvariable variable=MIcmt]$Tdy"
-        fi
-
-        if [ "$Previous" != "$Latest" ]; then
-            rm -rf "$repo"/Commits/"${1}".sha1
+        if [[ "$Previous" != "$Latest" ]]; then
+            rm -rf "$(REPO)"/Commits/"${1}".sha1
             echo "Changes found in ${2}Pkg"
-            echo "$Latest" >> "${repo}/Commits/"${1}".sha1"
+            echo "$Latest" >> "$(REPO)/Commits/"${1}".sha1"
             echo "##vso[task.setvariable variable=BuildCheck]True"
+        else
+            echo "${2}Pkg up to date"
         fi
+
+        echo "Latest: $Latest"
+        echo "Previous: $Previous"
+        echo "Tdy: $Tdy"
 
         printf "\n"
       }
@@ -94,6 +87,8 @@ steps:
       CPSHA OC OpenCore
       CPSHA Efi Efi
       CPSHA MI MacInfo
+
+      cat ../TdyCommit
 
 - task: Bash@3
   condition: or(eq(variables['BuildCheck'], 'True'), ne(variables['Build.SourceBranch'], 'refs/heads/master'))
@@ -116,8 +111,11 @@ steps:
       sed -i -e 's/updaterepo "https\:\/\/github.com\/acidanthera\/audk" UDK master || exit 1/git clone https\:\/\/github.com\/acidanthera\/audk --depth=1 UDK || exit 1/' efibuild.sh
       sed -i -e 's/src=.*/src=\$\(cat efibuild.sh\) \&\& eval \"\$src\" \|\| exit 1/g' macbuild.tool
 
-      ./macbuild.tool
-      
+      if [[ -z ${NO_BUILD+x} ]]; then
+          ./macbuild.tool --skip-build --skip-package --skip-tests	
+      else	
+          ./macbuild.tool	
+      fi
 
 - task: CmdLine@2
   condition: and(succeeded(), eq(variables['BuildCheck'], 'True'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
@@ -136,6 +134,7 @@ steps:
     targetType: 'inline'
     script: |
       #!/bin/bash
+      eval $(cat "${PWD}/../b/TdyCommit")
       ToMD="$(pwd)/../a/ReleaseNotes.md"
 
       echo "## Changes" >> $ToMD
@@ -147,23 +146,10 @@ steps:
 
         cd "${2}"Pkg || exit 1
 
-        ## Azure's cross task variables can't be called by variables
-        if [ "${1}" == "OC" ]; then
-          TMPcmt=$(OCcmt)
-        elif [ "${1}" == "Efi" ]; then
-          TMPcmt=$(Eficmt)
-        elif [ "${1}" == "MI" ]; then
-          TMPcmt=$(MIcmt)
-        fi
+        local Count="$(git rev-list --count $(eval echo \$"${1}"cmt)..HEAD)"
 
-        declare "${1}"count="$(git rev-list --count $TMPcmt..HEAD)"
-        local Count
-        Count=$(eval echo \$"${1}"count)
-
-        if [ "$Count" != 0 ]; then
-          declare "${1}"note="$(git log -"$Count" --format=" - %s %n")"
-          local Note
-          Note=$(eval echo \$"${1}"note)
+        if [[ "$Count" != 0 ]]; then
+          local Note="$(git log -"$Count" --format=" - %s %n")"
           echo "Got $Count Notes from ${2}Pkg"
           echo "### ${2}Pkg" >> $ToMD || exit 1
           echo "$Note" >> $ToMD || exit 1
@@ -176,8 +162,6 @@ steps:
       GNotes MI MacInfo
 
       # Reformat Release Notes
-      ## An extremely dirty solution to solve Azure's buggy bash line wrap
-      sed -i -e $'s/ -/\\\n-/g' $ToMD
       ## Exclude unnecessary links
       sed -i -e $'s/http.*//g' $ToMD
       cat $ToMD
@@ -191,11 +175,12 @@ steps:
       echo https://$(PAT):x-oauth-basic@github.com >> ~/.git-credentials
       git config --global user.email $(Email)
       git config --global user.name $(User)
-      cd ../b/RepoOperation/$(repo)
+      cd ../b/RepoOperation/$(REPO)
       git add .
       git commit -m "Refresh Commits to $(BuildDate)"
       git push origin master
 
+# Gitee Sucks!
 #- task: CmdLine@2
 #  condition: eq(variables['BuildCheck'], 'True')
 #  displayName: Publish Gitee Mirror
@@ -207,8 +192,8 @@ steps:
 #      git config --global user.email $(Email)
 #      git config --global user.name $(User)
 #      cd ../b
-#      git clone https://williambj1:$(GiteePAT)@gitee.com/williambj1/$(repo).git
-#      cd $(repo)
+#      git clone https://williambj1:$(GiteePAT)@gitee.com/williambj1/$(REPO).git
+#      cd $(REPO)
 #      rm -rf OpenCore-Build/*
 #      cp -R $(Build.ArtifactStagingDirectory)/OC/OpenCore*.zip OpenCore-Build
 #      cp -R $(Build.ArtifactStagingDirectory)/ReleaseNotes.md OpenCore-Build
