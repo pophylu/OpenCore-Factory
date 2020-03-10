@@ -27,6 +27,7 @@
 - [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg)
 - [MacInfoPkg](https://github.com/acidanthera/MacInfoPkg)
 - [EfiPkg](https://github.com/acidanthera/EfiPkg)
+- [AppleSupportPkg](https://github.com/acidanthera/AppleSupportPkg)
 
 ### 下载
 
@@ -42,5 +43,6 @@
   - OpenCorePkg
   - MacInfoPkg
   - EfiPkg
+  - AppleSupportPkg
 
 特别感谢 微软 Azure Pipelines

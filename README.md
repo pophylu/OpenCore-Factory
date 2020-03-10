@@ -27,6 +27,7 @@ Contains latest changes from:
 - [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg)
 - [MacInfoPkg](https://github.com/acidanthera/MacInfoPkg)
 - [EfiPkg](https://github.com/acidanthera/EfiPkg)
+- [AppleSupportPkg](https://github.com/acidanthera/AppleSupportPkg)
 
 ### Download
 
@@ -42,5 +43,6 @@ Contains latest changes from:
   - OpenCorePkg
   - MacInfoPkg
   - EfiPkg
+  - AppleSupportPkg
 
 Special thanks for Microsoft Azure Pipelines

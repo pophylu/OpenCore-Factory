@@ -89,18 +89,19 @@ steps:
       CPSHA OC OpenCore
       CPSHA Efi Efi
       CPSHA MI MacInfo
+      CPSHA ASP AppleSupport
 
       cat ../TdyCommit
 
 - task: Bash@3
   condition: or(eq(variables['BuildCheck'], 'True'), ne(variables['Build.SourceBranch'], 'refs/heads/master'))
-  displayName: Build OC
+  displayName: Build OpenCorePkg
   inputs:
     targetType: 'inline'
     script: |
       #!/bin/bash
       cd ../b
-      git clone https://github.com/acidanthera/OpenCorePkg.git
+      git clone --depth=30 https://github.com/acidanthera/OpenCorePkg.git
       cd OpenCorePkg
 
       # Patch Build Tool
@@ -113,11 +114,35 @@ steps:
       sed -i -e 's/updaterepo "https\:\/\/github.com\/acidanthera\/audk" UDK master || exit 1/git clone https\:\/\/github.com\/acidanthera\/audk --depth=1 UDK || exit 1/' efibuild.sh
       sed -i -e 's/src=.*/src=\$\(cat efibuild.sh\) \&\& eval \"\$src\" \|\| exit 1/g' macbuild.tool
 
-      if [[ -z ${NO_BUILD+x} ]]; then
-          ./macbuild.tool --skip-build --skip-package --skip-tests	
-      else	
-          ./macbuild.tool	
-      fi
+      ./macbuild.tool
+
+- task: Bash@3
+  condition: or(eq(variables['BuildCheck'], 'True'), ne(variables['Build.SourceBranch'], 'refs/heads/master'))
+  displayName: Build AppleSupportPkg
+  inputs:
+    targetType: 'inline'
+    script: |
+      #!/bin/bash
+      cd ../b/OpenCorePkg/UDK/
+      git clone --depth=30 https://github.com/acidanthera/AppleSupportPkg.git
+      cd AppleSupportPkg
+
+      # Patch Build Tool
+      ## Patch efibuild.sh
+      cp ../../efibuild.sh .
+      sed -i -e 's/ln -s ..\/UDK/ln -s ..\/../g' efibuild.sh
+      sed -i -e 's/rm -rf UDK//g' efibuild.sh
+      sed -i -e 's/sym=.*/sym=""/g' efibuild.sh
+      sed -i -e 's/git clone https:\/\/github.com\/acidanthera\/audk.*//g' efibuild.sh
+      sed -i -e 's/cd UDK/cd ..\/..\/UDK/g' efibuild.sh
+      sed -i -e 's/ln -s .. ".*/:/g' efibuild.sh
+      sed -i -e 's/cd .. \|/cd $ASPDir \|/g' efibuild.sh # Hope this won't break soon
+
+      ## Patch macbuild.tool
+      sed -i -e 's/"$0")/"$0")\'$'\n''ASPDir=\$PWD/g' macbuild.tool
+      sed -i -e 's/src=.*/src=\$\(cat efibuild.sh\) \&\& eval \"\$src\" \|\| exit 1/g' macbuild.tool
+
+      ./macbuild.tool
 
 - task: CmdLine@2
   condition: and(succeeded(), eq(variables['BuildCheck'], 'True'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
@@ -125,9 +150,14 @@ steps:
   inputs:
     script: |
       cd ../b/OpenCorePkg
-      mkdir ../../a/OC
-      cp UDK/Build/OpenCorePkg/DEBUG*/X64/OpenCore*.zip ../../a/OC
-      cp UDK/Build/OpenCorePkg/RELEASE*/X64/OpenCore*.zip ../../a/OC
+      mkdir ../../a/Artifacts
+
+      for Artifact in OpenCore AppleSupport; do
+          for Tgt in DEBUG RELEASE; do
+              cp UDK/Build/${Artifact}Pkg/${Tgt}*/X64/${Artifact}*.zip ../../a/Artifacts
+          done
+      done
+      ls $(Build.ArtifactStagingDirectory)/Artifacts
 
 - task: Bash@3
   condition: and(succeeded(), or(eq(variables['BuildCheck'], 'True'), ne(variables['Build.SourceBranch'], 'refs/heads/master')))
@@ -162,10 +192,12 @@ steps:
       GNotes OC OpenCore
       GNotes Efi Efi
       GNotes MI MacInfo
+      GNotes ASP AppleSupport
 
       # Reformat Release Notes
       ## Exclude unnecessary links
       sed -i -e $'s/http.*//g' $ToMD
+      sed -i -e '/^$/d' $ToMD
       cat $ToMD
 
 - task: CmdLine@2
@@ -197,7 +229,7 @@ steps:
 #      git clone https://williambj1:$(GiteePAT)@gitee.com/williambj1/$(REPO).git
 #      cd $(REPO)
 #      rm -rf OpenCore-Build/*
-#      cp -R $(Build.ArtifactStagingDirectory)/OC/OpenCore*.zip OpenCore-Build
+#      cp -R $(Build.ArtifactStagingDirectory)/Artifacts/OpenCore*.zip OpenCore-Build
 #      cp -R $(Build.ArtifactStagingDirectory)/ReleaseNotes.md OpenCore-Build
 #      mv OpenCore-Build/ReleaseNotes.md OpenCore-Build/README.md
 #      git add .
@@ -216,6 +248,6 @@ steps:
     tag: '$(BuildDate)'
     title: '$(BuildDate)'
     releaseNotesFile: '$(Build.ArtifactStagingDirectory)/ReleaseNotes.md'
-    assets: '$(Build.ArtifactStagingDirectory)/OC/OpenCore*.zip'
+    assets: '$(Build.ArtifactStagingDirectory)/Artifacts/*.zip'
     addChangeLog: false
     isPreRelease: true
