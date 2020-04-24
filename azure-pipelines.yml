@@ -215,7 +215,7 @@ steps:
       git commit -m "Refresh Commits to $(BuildDate)"
       git push origin master
 
-# Gitee Sucks!
+# Gitee Sucks!!
 #- task: CmdLine@2
 #  condition: eq(variables['BuildCheck'], 'True')
 #  displayName: Publish Gitee Mirror
