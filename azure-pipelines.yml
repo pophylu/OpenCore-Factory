@@ -87,7 +87,8 @@ steps:
       }
       
       CPSHA OC OpenCore
-      CPSHA Efi Efi
+      CPSHA DUET Duet
+      CPSHA EFI Efi
       CPSHA MI MacInfo
       #CPSHA ASP AppleSupport
 
@@ -191,7 +192,8 @@ steps:
       }
 
       GNotes OC OpenCore
-      GNotes Efi Efi
+      GNotes DUET Duet
+      GNotes EFI Efi
       GNotes MI MacInfo
       #GNotes ASP AppleSupport
 
