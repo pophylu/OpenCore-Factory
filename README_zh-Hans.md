@@ -22,12 +22,7 @@
 
 > 自动化 OpenCore 编译，每 8 小时刷新一次
 
-包含下列仓库的最新更改：
-
-- [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg)
-- [MacInfoPkg](https://github.com/acidanthera/MacInfoPkg)
-- [EfiPkg](https://github.com/acidanthera/EfiPkg)
-- [AppleSupportPkg](https://github.com/acidanthera/AppleSupportPkg)
+基于当前 [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg) 的最新源码
 
 ### 下载
 
@@ -39,10 +34,6 @@
 
 ## Credits
 
-- Acidanthera
-  - OpenCorePkg
-  - MacInfoPkg
-  - EfiPkg
-  - AppleSupportPkg
+由 Acidanthera 开发的 OpenCorePkg
 
 特别感谢 微软 Azure Pipelines

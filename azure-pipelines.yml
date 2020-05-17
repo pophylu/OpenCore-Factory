@@ -87,10 +87,6 @@ steps:
       }
       
       CPSHA OC OpenCore
-      CPSHA DUET Duet
-      CPSHA EFI Efi
-      CPSHA MI MacInfo
-      #CPSHA ASP AppleSupport
 
       cat ../TdyCommit
 
@@ -113,10 +109,10 @@ steps:
       sed -i -e 's/--depth=1/--depth=30/g' efibuild.sh
       sed -i -e 's/.dsc"/.dsc" \| xcpretty/g' efibuild.sh
       sed -i -e 's/updaterepo "https\:\/\/github.com\/acidanthera\/audk" UDK master || exit 1/git clone https\:\/\/github.com\/acidanthera\/audk --depth=1 UDK || exit 1/' efibuild.sh
-      sed -i -e 's/src=.*/src=\$\(cat efibuild.sh\) \&\& eval \"\$src\" \|\| exit 1/g' macbuild.tool
-      sed -i -e 's/ARCHS=.*/ARCHS=\(X64\)/g' macbuild.tool
+      sed -i -e 's/src=.*/src=\$\(cat efibuild.sh\) \&\& eval \"\$src\" \|\| exit 1/g' build_oc.tool
+      sed -i -e 's/ARCHS=.*/ARCHS=\(X64\)/g' build_oc.tool
 
-      ./macbuild.tool
+      ./build_oc.tool
 
 #- task: Bash@3
 #  condition: or(eq(variables['BuildCheck'], 'True'), ne(variables['Build.SourceBranch'], 'refs/heads/master'))
@@ -140,11 +136,11 @@ steps:
 #      sed -i -e 's/ln -s .. ".*/:/g' efibuild.sh
 #      sed -i -e 's/cd .. \|/cd $ASPDir \|/g' efibuild.sh # Hope this won't break soon
 #
-#      ## Patch macbuild.tool
-#      sed -i -e 's/"$0")/"$0")\'$'\n''ASPDir=\$PWD/g' macbuild.tool
-#      sed -i -e 's/src=.*/src=\$\(cat efibuild.sh\) \&\& eval \"\$src\" \|\| exit 1/g' macbuild.tool
+#      ## Patch build_oc.tool
+#      sed -i -e 's/"$0")/"$0")\'$'\n''ASPDir=\$PWD/g' build_oc.tool
+#      sed -i -e 's/src=.*/src=\$\(cat efibuild.sh\) \&\& eval \"\$src\" \|\| exit 1/g' build_oc.tool
 #
-#      ./macbuild.tool
+#      ./build_oc.tool
 
 - task: CmdLine@2
   condition: and(succeeded(), eq(variables['BuildCheck'], 'True'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
@@ -192,10 +188,6 @@ steps:
       }
 
       GNotes OC OpenCore
-      GNotes DUET Duet
-      GNotes EFI Efi
-      GNotes MI MacInfo
-      #GNotes ASP AppleSupport
 
       # Reformat Release Notes
       ## Exclude unnecessary links

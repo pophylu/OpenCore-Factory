@@ -22,12 +22,7 @@
 
 > Automated OpenCore build, triggers every 8 hours.
 
-Contains latest changes from:
-
-- [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg)
-- [MacInfoPkg](https://github.com/acidanthera/MacInfoPkg)
-- [EfiPkg](https://github.com/acidanthera/EfiPkg)
-- [AppleSupportPkg](https://github.com/acidanthera/AppleSupportPkg)
+Contains latest changes from [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg)
 
 ### Download
 
@@ -39,10 +34,6 @@ Contains latest changes from:
 
 ## Credits
 
-- Acidanthera
-  - OpenCorePkg
-  - MacInfoPkg
-  - EfiPkg
-  - AppleSupportPkg
+Acidanthera for developing OpenCorePkg
 
 Special thanks for Microsoft Azure Pipelines
