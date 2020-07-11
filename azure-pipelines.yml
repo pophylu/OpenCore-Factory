@@ -202,8 +202,8 @@ steps:
     script: |
       git config --global credential.helper store
       echo https://$(PAT):x-oauth-basic@github.com >> ~/.git-credentials
-      git config --global user.email $(Email)
-      git config --global user.name $(User)
+      git config --global user.name 'Azure Pipelines'
+      git config --global user.email '<>'
       cd ../b/RepoOperation/$(REPO)
       git add .
       git commit -m "Refresh Commits to $(BuildDate)"
