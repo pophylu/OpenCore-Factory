@@ -17,7 +17,7 @@ variables:
   DEBUG: 0
 
 pool:
-  vmImage: 'macOS-10.14'
+  vmImage: 'macOS-latest'
 
 steps:
 
